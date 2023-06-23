@@ -25,8 +25,8 @@ def do_logfunc(f_in, f_out):
 			names = []
 			for i in base_params:
 				regex = re.compile('([a-zA-Z0-9]*)$')
-				name = regex.search(i).group(1)
-				type = string.strip(i[0:len(i)-len(name)])				
+				name = regex.search(i)[1]
+				type = string.strip(i[:len(i)-len(name)])
 				# catch type with no name
 				if (len(type) == 0):
 					type = name
@@ -37,25 +37,30 @@ def do_logfunc(f_in, f_out):
 				# verbose the types
 				if (type == 'GLenum'):
 					format += ' %s'
-					params.append( 'EnumString(' + name + ')' )
-				elif (type == 'GLfloat' or type == 'GLclampf' or type == 'GLdouble'):
+					params.append(f'EnumString({name})')
+				elif type in ['GLfloat', 'GLclampf', 'GLdouble']:
 					format += ' %g'
 					params.append( name )
-				elif (type == 'GLint' or type == 'GLuint' or type == 'GLsizei' or type == 'GLbyte' or type == 'GLshort'
-					or type == 'GLubyte' or type == 'GLushort'):
+				elif type in [
+					'GLint',
+					'GLuint',
+					'GLsizei',
+					'GLbyte',
+					'GLshort',
+					'GLubyte',
+					'GLushort',
+				]:
 					format += ' %d'
 					params.append( name )
 				elif (type == 'GLboolean'):
 					format += ' %s'
-					params.append( name + ' ? "Y" : "N"' )
-				elif (type == 'void'):
-					pass
-				else:
+					params.append(f'{name} ? "Y" : "N"')
+				elif type != 'void':
 					f_out.write('// unknown type: "%s" name: "%s"\n' % (type, name))
 					format += ' \'' + type + ' ' + name + '\''
 			f_out.write('\tfprintf( tr.logFile, "' + format + '\\n"')
 			for par in params:
-				f_out.write(', ' + par)
+				f_out.write(f', {par}')
 			f_out.write(' );\n')
 			if (t[0] != 'void'):
 				f_out.write('\treturn dll%s(' % t[2])

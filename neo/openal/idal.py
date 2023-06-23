@@ -44,14 +44,11 @@ funcs = [
 
 def warningHeader( f ):
     f.write( '// generated header. do not edit\n' )
-    f.write( '// ' + __file__ + '\n' )
-    f.write( '// ' + time.asctime() + '\n\n' )
+    f.write(f'// {__file__}' + '\n')
+    f.write(f'// {time.asctime()}' + '\n\n')
 
 def genIDALFunc( f, declare ):
-    if ( declare ):
-        extern = 'extern '
-    else:
-        extern = ''
+    extern = 'extern ' if declare else ''
     for func in funcs:
         f.write( extern + func[0] + ' ( ALAPIENTRY * id' + func[1] + ' )( ' )
         i = 2
@@ -73,31 +70,27 @@ def genDefineMapping( f ):
 def genIDALInit( f ):
     for func in funcs:
         # annoying casting
-        cast = func[0] + ' ( ALAPIENTRY * ) ( '
-        i = 2
-        while ( i < len( func ) ):
+        cast = f'{func[0]} ( ALAPIENTRY * ) ( '
+        for i in range(2, len( func )):
             if ( i != 2 ):
                 cast += ', '
             cast += func[i]
-            i += 1
         cast += ' )'
         # function
-        f.write( 'id' + func[1] + ' = ( ' + cast + ' )GetProcAddress( h, "' + func[1] + '" );\n' )
-        f.write( 'if ( !id' + func[1] + ') {\n  return "' + func[1] + '";\n}\n' )
+        f.write(f'id{func[1]} = ( {cast} )GetProcAddress( h, "{func[1]}' + '" );\n')
+        f.write(f'if ( !id{func[1]}' + ') {\n  return "' + func[1] + '";\n}\n')
 
 if __name__ == '__main__':
-    f = open( 'idal.h', 'w' )
-    warningHeader( f )
-    genIDALFunc( f, True )
-    f.write( '\n' )
-    genDefineMapping( f )
-    f.close()
-    f = open( 'idal.cpp', 'w' )
-    warningHeader( f )
-    genIDALFunc( f, False )
-    f.write( '\n' );
-    f.write( 'const char* InitializeIDAL( HMODULE h ) {\n' )
-    genIDALInit( f )
-    f.write( 'return NULL;\n' );
-    f.write( '};\n' )
-    f.close()
+    with open( 'idal.h', 'w' ) as f:
+        warningHeader( f )
+        genIDALFunc( f, True )
+        f.write( '\n' )
+        genDefineMapping( f )
+    with open( 'idal.cpp', 'w' ) as f:
+        warningHeader( f )
+        genIDALFunc( f, False )
+        f.write( '\n' );
+        f.write( 'const char* InitializeIDAL( HMODULE h ) {\n' )
+        genIDALInit( f )
+        f.write( 'return NULL;\n' );
+        f.write( '};\n' )

@@ -191,40 +191,36 @@ def check_files_against_build( files, pak_path ):
 # match a path to a file in a case insensitive way
 # return ( True/False, 'walked up to' )
 def ifind( base, path ):
-	refpath = path
-	path = os.path.normpath( path )
-	path = os.path.normcase( path )
-	# early out just in case
-	if ( os.path.exists( path ) ):
-		return ( True, path )
-	head = path
-	components = []
-	while ( len( head ) ):
-		( head, chunk ) = os.path.split( head )
-		components.append( chunk )
-		#print 'head: %s - components: %s' % ( head, repr( components ) )
-	components.reverse()
-	level = 0
-	for root, dirs, files in os.walk( base, topdown = True ):
-		if ( level < len( components ) - 1 ):
-			#print 'filter dirs: %s' % repr( dirs )
-			dirs_del = []
-			for i in dirs:
-				if ( not i.lower() == components[ level ].lower() ):
-					dirs_del.append( i )
-			for i in dirs_del:
-				dirs.remove( i )
-			level += 1
-			# we assume there is never going to be 2 dirs with only case difference
-			if ( len( dirs ) != 1 ):
-				#print '%s: ifind failed dirs matching at %s - dirs: %s' % ( refpath, root, repr( dirs ) )
-				return ( False, root[ len( base ) + 1: ] )
-		else:
-			# must find the file here
-			for i in files:
-				if ( i.lower() == components[-1].lower() ):
-					return ( True, os.path.join( root, i )[ len( base ) + 1: ] )
-			return ( False, root[ len( base ) + 1: ] )
+    refpath = path
+    path = os.path.normpath( path )
+    path = os.path.normcase( path )
+    # early out just in case
+    if ( os.path.exists( path ) ):
+    	return ( True, path )
+    head = path
+    components = []
+    while ( len( head ) ):
+    	( head, chunk ) = os.path.split( head )
+    	components.append( chunk )
+    	#print 'head: %s - components: %s' % ( head, repr( components ) )
+    components.reverse()
+    level = 0
+    for root, dirs, files in os.walk( base, topdown = True ):
+        if ( level < len( components ) - 1 ):
+            dirs_del = [i for i in dirs if i.lower() != components[ level ].lower()]
+            for i in dirs_del:
+            	dirs.remove( i )
+            level += 1
+            # we assume there is never going to be 2 dirs with only case difference
+            if ( len( dirs ) != 1 ):
+            	#print '%s: ifind failed dirs matching at %s - dirs: %s' % ( refpath, root, repr( dirs ) )
+            	return ( False, root[ len( base ) + 1: ] )
+        else:
+            # must find the file here
+            for i in files:
+            	if ( i.lower() == components[-1].lower() ):
+            		return ( True, os.path.join( root, i )[ len( base ) + 1: ] )
+            return ( False, root[ len( base ) + 1: ] )
 
 # do case insensitive FS search on files list
 # return [ cased files, not found (unmodified ) ]

@@ -48,53 +48,30 @@ class idSetupBase:
 		file_out = file[:-3]
 		cmd = 'm4 '
 		for ( key, val ) in d.items():
-			cmd += '--define=%s="%s" ' % ( key, val )
-		cmd += '%s > %s' % ( file, file_out )
+			cmd += f'--define={key}="{val}" '
+		cmd += f'{file} > {file_out}'
 		self.SimpleCommand( cmd )	
 
 	def ExtractProtocolVersion( self ):
-		f = open( 'framework/Licensee.h' )
-		l = f.readlines()
-		f.close()
-
-		major = 'X'
+		with open( 'framework/Licensee.h' ) as f:
+			l = f.readlines()
 		p = re.compile( '^#define ASYNC_PROTOCOL_MAJOR\t*(.*)' )
-		for i in l:
-			if ( p.match( i ) ):
-				major = p.match( i ).group(1)
-				break
-
-		f = open( 'framework/async/AsyncNetwork.h' )
-		l = f.readlines()
-		f.close()
-
-		minor = 'X'
+		major = next((p.match( i )[1] for i in l if ( p.match( i ) )), 'X')
+		with open( 'framework/async/AsyncNetwork.h' ) as f:
+			l = f.readlines()
 		p = re.compile( '^const int ASYNC_PROTOCOL_MINOR\t*= (.*);' )
-		for i in l:
-			if ( p.match( i ) ):
-				minor = p.match( i ).group(1)
-				break	
-	
-		return '%s.%s' % ( major, minor )
+		minor = next((p.match( i )[1] for i in l if ( p.match( i ) )), 'X')
+		return f'{major}.{minor}'
 
 	def ExtractEngineVersion( self ):
-		f = open( 'framework/Licensee.h' )
-		l = f.readlines()
-		f.close()
-
-		version = 'X'
+		with open( 'framework/Licensee.h' ) as f:
+			l = f.readlines()
 		p = re.compile( '^#define.*ENGINE_VERSION\t*"DOOM (.*)"' )
-		for i in l:
-			if ( p.match( i ) ):
-				version = p.match( i ).group(1)
-				break
-	
-		return version
+		return next((p.match( i )[1] for i in l if ( p.match( i ) )), 'X')
 
 	def ExtractBuildVersion( self ):
-		f = open( 'framework/BuildVersion.h' )
-		l = f.readlines()[ 4 ]
-		f.close()
+		with open( 'framework/BuildVersion.h' ) as f:
+			l = f.readlines()[ 4 ]
 		pat = re.compile( '.* = (.*);\n' )
 		return pat.split( l )[ 1 ]
 
@@ -141,11 +118,15 @@ class idGamePaks( idSetupBase ):
 	def BuildGamePak( self, target = None, source = None, env = None ):
 		# NOTE: ew should have done with zipfile module
 		temp_dir = tempfile.mkdtemp( prefix = 'gamepak' )
-		self.SimpleCommand( 'cp %s %s' % ( source[0].abspath, os.path.join( temp_dir, 'gamex86.so' ) ) )
-		self.SimpleCommand( 'strip %s' % os.path.join( temp_dir, 'gamex86.so' ) )
-		self.SimpleCommand( 'echo 2 > %s' % ( os.path.join( temp_dir, 'binary.conf' ) ) )
-		self.SimpleCommand( 'cd %s ; zip %s gamex86.so binary.conf' % ( temp_dir, os.path.join( temp_dir, target[0].abspath ) ) )
-		self.SimpleCommand( 'rm -r %s' % temp_dir )
+		self.SimpleCommand(
+			f"cp {source[0].abspath} {os.path.join(temp_dir, 'gamex86.so')}"
+		)
+		self.SimpleCommand(f"strip {os.path.join(temp_dir, 'gamex86.so')}")
+		self.SimpleCommand(f"echo 2 > {os.path.join(temp_dir, 'binary.conf')}")
+		self.SimpleCommand(
+			f'cd {temp_dir} ; zip {os.path.join(temp_dir, target[0].abspath)} gamex86.so binary.conf'
+		)
+		self.SimpleCommand(f'rm -r {temp_dir}')
 		return None
 
 # --------------------------------------------------------------------
@@ -182,5 +163,5 @@ def SetupUtils( env ):
 def BuildList( s_prefix, s_string ):
 	s_list = string.split( s_string )
 	for i in range( len( s_list ) ):
-		s_list[ i ] = s_prefix + '/' + s_list[ i ]
+		s_list[ i ] = f'{s_prefix}/{s_list[i]}'
 	return s_list
